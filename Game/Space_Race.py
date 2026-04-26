@@ -3,6 +3,7 @@ from banner import Banner
 from shape_transformations import Point,ShapeTransforms
 from start_button import StartButton
 from gamesprite import GameSprite
+from level import Level
 
 #
  
@@ -31,7 +32,9 @@ def main():
 
     startButton = StartButton(screen_midpoint)
     startButton.draw(screen, "Start", BLUE, WHITE) 
-    player = GameSprite()
+    player = GameSprite("Game/spaceship.png",80,80)
+
+    level = Level()
 
     clock = pygame.time.Clock()
     done = False
@@ -44,18 +47,40 @@ def main():
                 pos = pygame.mouse.get_pos()
                 mouse_x = pos[0]
                 mouse_y = pos[1]
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            level.shift_world(5)
+        if keys[pygame.K_RIGHT]:
+            level.shift_world(-5)
                 
-        if startButton.isClicked(mouse_x,mouse_y):
-            background_image = pygame.image.load("Game//spacebackdrop.jpg").convert()
+        if not startButton.visible:
             screen.blit(background_image, [0, 0])
             player.draw(screen,screen_midpoint.x-player.width//2,screen_midpoint.y+100)
+            level.draw(screen)
+
+ 
+        if startButton.isClicked(mouse_x,mouse_y):
+            background_image = pygame.image.load("Game//spacebackdrop.jpg").convert()
             startButton.visible=False 
 
 
         
         
-        
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         clock.tick(60) 
         pygame.display.flip()
     
