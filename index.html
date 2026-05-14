@@ -23,40 +23,41 @@
     <script>
         async function fetchRepoFiles() {
             const username = 'nithinkasturi-collab';
-            const container = document.getElementById('file-list');
             
-            // Correctly extracts the repository name from the first segment of the path
-            const pathSegments = window.location.pathname.split('/').filter(Boolean);
-            const repo = pathSegments[0]; 
+            // 1. CHOOSE YOUR DEPLOYMENT MODE BELOW:
+            // IF YOUR REPOSITORY SITE HAS A NAME LIKE: nithinkasturi-collab.github.io/my-project
+            // -> Change 'YOUR_REPO_NAME' to match your actual GitHub repository name exactly.
+            const repoName = 'YOUR_REPO_NAME'; 
 
-            if (!repo) {
-                container.innerHTML = '<p class="error">Error: Cannot detect repository name. Ensure this page is accessed via your GitHub Pages URL.</p>';
-                return;
-            }
+            // IF YOUR REPOSITORY SITE IS YOUR MAIN HOMEPAGE SITE: nithinkasturi-collab.github.io
+            // -> Uncomment the line below (remove the //) and delete the line above:
+            // const repoName = 'nithinkasturi-collab.github.io';
 
-            // Fixed official GitHub API URL
-            const apiUrl = `github.com{username}/${repo}/contents`;
+            const container = document.getElementById('file-list');
+
+            // Correctly targets the secure official GitHub REST API endpoint
+            const apiUrl = `github.com{username}/${repoName}/contents`;
 
             try {
                 const response = await fetch(apiUrl);
                 
                 if (!response.ok) {
                     if (response.status === 404) {
-                        throw new Error('Repository not found. Verify that the repository is Public.');
+                        throw new Error(`Repository "${repoName}" not found. Verify that the spelling matches exactly and that the repository visibility is Public.`);
                     }
-                    throw new Error(`GitHub API returned status ${response.status}`);
+                    throw new Error(`GitHub REST API returned status code ${response.status}.`);
                 }
                 
                 const files = await response.json();
                 let html = '<ul>';
 
-                // Sort folders first, then files
+                // Sort directory listings first, then standard files
                 files.sort((a, b) => (b.type === 'dir') - (a.type === 'dir'));
 
                 let displayedItemsCount = 0;
 
                 files.forEach(file => {
-                    // Do not show the browser script page itself
+                    // Do not list this browser script interface file itself
                     if (file.name === 'index.html') return;
 
                     displayedItemsCount++;
@@ -68,10 +69,10 @@
                 });
 
                 html += '</ul>';
-                container.innerHTML = displayedItemsCount === 0 ? '<p>No files found in this repository.</p>' : html;
+                container.innerHTML = displayedItemsCount === 0 ? '<p>No target assets or scripts found in this directory path.</p>' : html;
 
             } catch (error) {
-                container.innerHTML = `<p class="error"><strong>Error:</strong> ${error.message}</p>`;
+                container.innerHTML = `<div class="error"><strong>Error Fetching Data:</strong> ${error.message}</div>`;
             }
         }
 
