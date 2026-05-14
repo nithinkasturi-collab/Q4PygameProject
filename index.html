@@ -1,25 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>File Browser</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Browser</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; background: #f6f8fa; color: #24292f; }
+        h1 { border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; }
+        ul { list-style: none; padding: 0; }
+        li { padding: 8px 12px; background: white; margin-bottom: 8px; border: 1px solid #d0d7de; border-radius: 6px; display: flex; align-items: center; }
+        a { color: #0969da; text-decoration: none; font-weight: 500; width: 100%; }
+        a:hover { text-decoration: underline; }
+        .icon { margin-right: 10px; font-weight: bold; }
+    </style>
 </head>
 <body>
-    <h1>Project Files</h1>
-    <div id="file-list">Loading files...</div>
+
+    <h1>Code Browser</h1>
+    <div id="file-list">Loading repository contents...</div>
 
     <script>
-        (async () => {
-            // Replace :user and :repo with your details
-            const response = await fetch('https://api.github.com/repos/:user/:repo/contents/');
-            const data = await response.json();
-            let htmlString = '<ul>';
-            for (let file of data) {
-                // Creates direct links to view the files on GitHub Pages
-                htmlString += `<li><a href="${file.path}">${file.name}</a></li>`;
+        async function fetchRepoFiles() {
+            const username = 'nithinkasturi-collab';
+            
+            // Automatically extracts the repository name from your GitHub Pages URL
+            const pathSegments = window.location.pathname.split('/').filter(Boolean);
+            const repo = pathSegments[0]; 
+
+            if (!repo) {
+                document.getElementById('file-list').innerHTML = '<p>Error: Cannot detect repository name. Ensure this is hosted on GitHub Pages.</p>';
+                return;
             }
-            htmlString += '</ul>';
-            document.getElementById('file-list').innerHTML = htmlString;
-        })()
+
+            const apiUrl = `github.com{username}/${repo}/contents/`;
+            const container = document.getElementById('file-list');
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const files = await response.json();
+                let html = '<ul>';
+
+                // Sort directories first, then files
+                files.sort((a, b) => (b.type === 'dir') - (a.type === 'dir'));
+
+                files.forEach(file => {
+                    // Hide the index.html itself from the browser list
+                    if (file.name === 'index.html') return;
+
+                    const isDir = file.type === 'dir';
+                    const icon = isDir ? '📁' : '📄';
+                    
+                    // Direct link to the file/folder in the Pages site
+                    const targetUrl = isDir ? `${file.path}/` : file.path;
+
+                    html += `<li><span class="icon">${icon}</span><a href="${targetUrl}">${file.name}</a></li>`;
+                });
+
+                html += '</ul>';
+                container.innerHTML = files.length <= 1 ? '<p>No other files found in this directory.</p>' : html;
+
+            } catch (error) {
+                container.innerHTML = `<p style="color:cf222e;">Error loading files. Check if the repository is public.</p>`;
+            }
+        }
+
+        fetchRepoFiles();
     </script>
 </body>
 </html>
