@@ -12,6 +12,7 @@
         a { color: #0969da; text-decoration: none; font-weight: 500; width: 100%; }
         a:hover { text-decoration: underline; }
         .icon { margin-right: 10px; font-weight: bold; }
+        .error { color: #cf222e; background: #ffebe9; padding: 12px; border: 1px solid #ffc1c0; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -22,47 +23,55 @@
     <script>
         async function fetchRepoFiles() {
             const username = 'nithinkasturi-collab';
+            const container = document.getElementById('file-list');
             
-            // Automatically extracts the repository name from your GitHub Pages URL
+            // Correctly extracts the repository name from the first segment of the path
             const pathSegments = window.location.pathname.split('/').filter(Boolean);
             const repo = pathSegments[0]; 
 
             if (!repo) {
-                document.getElementById('file-list').innerHTML = '<p>Error: Cannot detect repository name. Ensure this is hosted on GitHub Pages.</p>';
+                container.innerHTML = '<p class="error">Error: Cannot detect repository name. Ensure this page is accessed via your GitHub Pages URL.</p>';
                 return;
             }
 
-            const apiUrl = `github.com{username}/${repo}/contents/`;
-            const container = document.getElementById('file-list');
+            // Fixed official GitHub API URL
+            const apiUrl = `github.com{username}/${repo}/contents`;
 
             try {
                 const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Repository not found. Verify that the repository is Public.');
+                    }
+                    throw new Error(`GitHub API returned status ${response.status}`);
+                }
                 
                 const files = await response.json();
                 let html = '<ul>';
 
-                // Sort directories first, then files
+                // Sort folders first, then files
                 files.sort((a, b) => (b.type === 'dir') - (a.type === 'dir'));
 
+                let displayedItemsCount = 0;
+
                 files.forEach(file => {
-                    // Hide the index.html itself from the browser list
+                    // Do not show the browser script page itself
                     if (file.name === 'index.html') return;
 
+                    displayedItemsCount++;
                     const isDir = file.type === 'dir';
                     const icon = isDir ? '📁' : '📄';
-                    
-                    // Direct link to the file/folder in the Pages site
-                    const targetUrl = isDir ? `${file.path}/` : file.path;
+                    const targetUrl = isDir ? `${file.name}/` : file.name;
 
                     html += `<li><span class="icon">${icon}</span><a href="${targetUrl}">${file.name}</a></li>`;
                 });
 
                 html += '</ul>';
-                container.innerHTML = files.length <= 1 ? '<p>No other files found in this directory.</p>' : html;
+                container.innerHTML = displayedItemsCount === 0 ? '<p>No files found in this repository.</p>' : html;
 
             } catch (error) {
-                container.innerHTML = `<p style="color:cf222e;">Error loading files. Check if the repository is public.</p>`;
+                container.innerHTML = `<p class="error"><strong>Error:</strong> ${error.message}</p>`;
             }
         }
 
